@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistem Tagihan</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>Sistem Tagihan</strong><small> Pembayaran QR / transfer — verifikasi manual</small></div>
+    <button id="logoutBtn" class="secondary hidden">Keluar</button>
+  </header>
+  <main class="wrap">
+    <div id="notice" class="notice hidden" role="status"></div>
+    <section id="setupPanel" class="panel hidden">
+      <h1>Konfigurasi belum lengkap</h1>
+      <p>Isi URL project Supabase dan anon/publishable key di file <code>app.js</code>, lalu muat ulang halaman.</p>
+    </section>
+    <section id="authPanel" class="panel hidden">
+      <div class="tabs">
+        <button id="loginTab" class="tab active">Masuk</button>
+        <button id="registerTab" class="tab">Daftar customer</button>
+      </div>
+      <form id="loginForm">
+        <h1>Masuk</h1>
+        <label>Email<input type="email" id="loginEmail" required autocomplete="email"></label>
+        <label>Kata sandi<input type="password" id="loginPassword" required autocomplete="current-password"></label>
+        <button type="submit">Masuk</button>
+      </form>
+      <form id="registerForm" class="hidden">
+        <h1>Daftar akun customer</h1>
+        <p class="muted">Akun baru harus disetujui admin sebelum dapat melihat tagihan.</p>
+        <label>Nama lengkap<input id="regName" required maxlength="100"></label>
+        <label>Email<input type="email" id="regEmail" required autocomplete="email"></label>
+        <label>Nomor HP (opsional)<input id="regPhone" maxlength="30"></label>
+        <label>Kata sandi (minimal 8 karakter)<input type="password" id="regPassword" required minlength="8" autocomplete="new-password"></label>
+        <button type="submit">Daftar</button>
+      </form>
+    </section>
+    <section id="pendingPanel" class="panel hidden">
+      <h1>Akun menunggu persetujuan</h1>
+      <p>Pendaftaran berhasil. Admin perlu menyetujui akun Anda sebelum tagihan dapat diakses.</p>
+      <button id="pendingRefresh" class="secondary">Periksa status lagi</button>
+    </section>
+    <section id="appPanel" class="hidden">
+      <div class="welcome">
+        <div><h1 id="welcomeTitle">Tagihan saya</h1><p id="welcomeText" class="muted"></p></div>
+      </div>
+      <div id="customerArea" class="hidden">
+        <section class="panel">
+          <h2>Petunjuk pembayaran</h2>
+          <p>Bayar sesuai nominal tagihan menggunakan QR pribadi/QRIS statis yang ditampilkan admin, atau transfer ke rekening tujuan. Setelah membayar, kirim konfirmasi di bawah. Status baru menjadi <b>Lunas</b> setelah admin memeriksa dana masuk dan menyetujui pembayaran.</p>
+          <div id="paymentDestination" class="payment-destination"></div>
+          <img id="qrisImage" class="qris hidden" alt="QR pembayaran">
+          <p id="qrisMissing" class="muted">Admin belum memasang gambar QR. Gunakan rekening/nomor pembayaran yang ditampilkan atau hubungi admin.</p>
+        </section>
+        <section class="panel">
+          <h2>Tagihan saya</h2>
+          <div id="customerInvoices" class="cards"></div>
+        </section>
+        <section class="panel">
+          <h2>Riwayat konfirmasi</h2>
+          <div id="customerSubmissions" class="cards"></div>
+        </section>
+      </div>
+      <div id="adminArea" class="hidden">
+        <section class="panel">
+          <h2>Pengaturan tujuan pembayaran</h2>
+          <p class="muted">Edit nilai di pengaturan aplikasi pada Supabase, atau ubah konstanta di app.js. Jangan memasang QR milik orang lain.</p>
+          <div id="adminDestinationPreview" class="payment-destination"></div>
+        </section>
+        <section class="panel">
+          <h2>Permintaan akun customer</h2>
+          <div id="adminCustomers" class="cards"></div>
+        </section>
+        <section class="panel">
+          <h2>Buat tagihan</h2>
+          <form id="invoiceForm" class="form-grid">
+            <label>Customer<select id="invoiceCustomer" required></select></label>
+            <label>Judul tagihan<input id="invoiceTitle" required maxlength="160" placeholder="Contoh: Tagihan Oktober 2026"></label>
+            <label>Nominal (Rupiah)<input id="invoiceAmount" type="number" min="1" step="1" required></label>
+            <label>Jatuh tempo<input id="invoiceDue" type="date" required></label>
+            <label>Catatan (opsional)<input id="invoiceNote" maxlength="500"></label>
+            <button type="submit">Buat tagihan</button>
+          </form>
+        </section>
+        <section class="panel">
+          <h2>Semua tagihan</h2>
+          <div id="adminInvoices" class="cards"></div>
+        </section>
+        <section class="panel">
+          <h2>Konfirmasi pembayaran menunggu pemeriksaan</h2>
+          <p class="muted">Cocokkan nominal, tanggal, referensi, dan dana yang benar-benar masuk ke aplikasi GoPay/bank Anda sebelum menyetujui.</p>
+          <div id="adminSubmissions" class="cards"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <footer>Jangan pernah menganggap pembayaran lunas hanya karena customer mengirim konfirmasi.</footer>
+  <script src="app.js"></script>
+</body>
+</html>
