@@ -11,7 +11,7 @@ const QR_IMAGE_PATH = "assets/qris.png"; // Ganti file assets/qris.png dengan ga
 
 const $ = (id) => document.getElementById(id);
 const configured = !SUPABASE_URL.includes("PASTE_") && !SUPABASE_ANON_KEY.includes("PASTE_");
-let sb = null, currentUser = null, currentProfile = null, invoicesCache = [], customersCache = [];
+let sb = null, currentUser = null, currentProfile = null, invoicesCache = [], customersCache = [], recoveryMode = false;
 
 function showNotice(message, error=false) {
   $("notice").textContent = message;
@@ -33,8 +33,8 @@ function renderDestination(){
   img.onerror=()=>{img.classList.add("hidden");missing.classList.remove("hidden");};
   img.src=QR_IMAGE_PATH;
 }
-function showAuth(tab="login"){toggle("authPanel",true);toggle("appPanel",false);toggle("pendingPanel",false);toggle("loginForm",tab==="login");toggle("registerForm",tab==="register");$("loginTab").classList.toggle("active",tab==="login");$("registerTab").classList.toggle("active",tab==="register");toggle("logoutBtn",false);}
-function signedOut(){currentUser=null;currentProfile=null;showAuth();clearNotice();}
+function showAuth(tab="login"){toggle("authPanel",true);toggle("appPanel",false);toggle("pendingPanel",false);toggle("recoveryPanel",false);toggle("loginForm",tab==="login");toggle("registerForm",tab==="register");$("loginTab").classList.toggle("active",tab==="login");$("registerTab").classList.toggle("active",tab==="register");toggle("logoutBtn",false);}
+function signedOut(){currentUser=null;currentProfile=null;if(!recoveryMode)showAuth();clearNotice();}
 async function refreshSession(){
   const {data:{session},error}=await sb.auth.getSession();
   if(error) throw error;
@@ -128,13 +128,42 @@ async function createInvoice(e){
 function init(){
   if(!configured){toggle("setupPanel",true);return;}
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  // Password recovery links return to this GitHub Pages URL; Supabase JS processes the URL session.
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==="PASSWORD_RECOVERY"){
+      recoveryMode=true;
+      toggle("authPanel",false);toggle("appPanel",false);toggle("pendingPanel",false);toggle("recoveryPanel",true);toggle("logoutBtn",false);
+      showNotice("Tautan pemulihan dikenali. Silakan buat kata sandi baru.");
+    } else if(event==="SIGNED_OUT" && !recoveryMode){ signedOut(); }
+  });
+  $("forgotPasswordBtn").onclick=async()=>{
+    const email=$("loginEmail").value.trim();
+    if(!email){showNotice("Masukkan email akun terlebih dahulu, lalu klik Lupa kata sandi.",true);$("loginEmail").focus();return;}
+    const btn=$("forgotPasswordBtn");btn.disabled=true;
+    try{
+      const redirectTo=window.location.origin+window.location.pathname;
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+      if(error)throw error;
+      showNotice("Jika email terdaftar, instruksi pemulihan akan dikirim. Periksa Inbox/Spam. Jangan meminta email berulang kali jika terkena rate limit.");
+    }catch(err){showNotice(err.message||"Permintaan pemulihan gagal.",true);}finally{btn.disabled=false;}
+  };
+  $("recoveryForm").onsubmit=async e=>{
+    e.preventDefault();
+    const password=$("newPassword").value, confirmPassword=$("confirmNewPassword").value;
+    if(password.length<8){showNotice("Kata sandi minimal 8 karakter.",true);return;}
+    if(password!==confirmPassword){showNotice("Kedua kata sandi tidak sama.",true);return;}
+    const btn=$("recoveryForm").querySelector('button[type="submit"]');btn.disabled=true;
+    try{
+      const {error}=await sb.auth.updateUser({password});if(error)throw error;
+      recoveryMode=false;$("recoveryForm").reset();await sb.auth.signOut();showAuth("login");showNotice("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.");
+    }catch(err){showNotice(err.message||"Gagal menyimpan kata sandi. Minta tautan baru setelah batas email pulih.",true);}finally{btn.disabled=false;}
+  };
   $("loginTab").onclick=()=>showAuth("login");$("registerTab").onclick=()=>showAuth("register");
   $("loginForm").onsubmit=async e=>{e.preventDefault();try{const {error}=await sb.auth.signInWithPassword({email:$("loginEmail").value,password:$("loginPassword").value});if(error)throw error;await refreshSession();}catch(err){showNotice(err.message||"Gagal masuk.",true);}};
   $("registerForm").onsubmit=async e=>{e.preventDefault();try{const {data,error}=await sb.auth.signUp({email:$("regEmail").value,password:$("regPassword").value,options:{data:{full_name:$("regName").value.trim(),phone:$("regPhone").value.trim()}}});if(error)throw error;if(data.session){currentUser=data.user;await loadProfile();}else{showNotice("Pendaftaran dikirim. Jika verifikasi email aktif, buka email Anda. Setelah itu admin akan menyetujui akun.");showAuth("login");}}catch(err){showNotice(err.message||"Pendaftaran gagal.",true);}};
   $("logoutBtn").onclick=async()=>{await sb.auth.signOut();signedOut();};
   $("pendingRefresh").onclick=async()=>{try{await refreshSession();}catch(e){showNotice(e.message,true);}};
   $("invoiceForm").onsubmit=createInvoice;
-  sb.auth.onAuthStateChange((_event,session)=>{if(!session){signedOut();}});
   refreshSession().catch(e=>showNotice(e.message||"Tidak dapat memuat akun.",true));
 }
 init();

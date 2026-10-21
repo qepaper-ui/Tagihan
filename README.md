@@ -68,3 +68,11 @@ Paket ini belum membuat tagihan berulang otomatis. Untuk versi awal, admin membu
 - Jangan percaya screenshot/nomor referensi saja; cocokkan transaksi di aplikasi penerima.
 - Jika akun Supabase menggunakan pengaturan email-confirmation, customer mungkin perlu verifikasi email sebelum bisa login.
 - Fungsi SQL memakai pemeriksaan `is_admin()` di server/database; jangan hapus pemeriksaan tersebut.
+
+
+## Pemulihan kata sandi di GitHub Pages
+- Versi ini menambahkan tombol **Lupa kata sandi?** dan formulir kata sandi baru.
+- Di Supabase → Authentication → URL Configuration, pastikan Site URL dan Redirect URLs memuat `https://qepaper-ui.github.io/Tagihan/`.
+- Setelah batas email pulih, masukkan email pada form login lalu tekan **Lupa kata sandi?** satu kali. Periksa Inbox/Spam. Tautan harus kembali ke situs GitHub Pages, bukan `localhost`.
+- Kata sandi baru minimal 8 karakter. Setelah berhasil, masuk lagi menggunakan kata sandi baru.
+- Jangan membagikan tautan pemulihan, password, atau service_role key.

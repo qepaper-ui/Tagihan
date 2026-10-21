@@ -28,6 +28,7 @@
         <label>Email<input type="email" id="loginEmail" required autocomplete="email"></label>
         <label>Kata sandi<input type="password" id="loginPassword" required autocomplete="current-password"></label>
         <button type="submit">Masuk</button>
+        <p><button type="button" id="forgotPasswordBtn" class="secondary">Lupa kata sandi?</button></p>
       </form>
       <form id="registerForm" class="hidden">
         <h1>Daftar akun customer</h1>
@@ -37,6 +38,15 @@
         <label>Nomor HP (opsional)<input id="regPhone" maxlength="30"></label>
         <label>Kata sandi (minimal 8 karakter)<input type="password" id="regPassword" required minlength="8" autocomplete="new-password"></label>
         <button type="submit">Daftar</button>
+      </form>
+    </section>
+    <section id="recoveryPanel" class="panel hidden">
+      <h1>Buat kata sandi baru</h1>
+      <p class="muted">Masukkan kata sandi baru untuk akun aplikasi tagihan Anda.</p>
+      <form id="recoveryForm">
+        <label>Kata sandi baru (minimal 8 karakter)<input type="password" id="newPassword" required minlength="8" autocomplete="new-password"></label>
+        <label>Ulangi kata sandi baru<input type="password" id="confirmNewPassword" required minlength="8" autocomplete="new-password"></label>
+        <button type="submit">Simpan kata sandi baru</button>
       </form>
     </section>
     <section id="pendingPanel" class="panel hidden">
