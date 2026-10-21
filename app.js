@@ -1,6 +1,6 @@
 // 1) Ganti dengan URL dan anon/publishable key dari Supabase > Project Settings > API.
-const SUPABASE_URL = "https://pjeitduvvvigznkwtbjb.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_Vl2HHitV1fXg0OXN7lH7Fg_9VG0O5fb";
+const SUPABASE_URL = "PASTE_SUPABASE_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_OR_PUBLISHABLE_KEY_HERE";
 
 // 2) Atur tujuan pembayaran. Gunakan QR yang memang milik Anda dan sudah diuji.
 const PAYMENT_DESTINATION = `Metode: GoPay / transfer bank
