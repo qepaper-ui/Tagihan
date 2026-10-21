@@ -1,6 +1,6 @@
 // 1) Ganti dengan URL dan anon/publishable key dari Supabase > Project Settings > API.
-const SUPABASE_URL = "https://pjeitduvvvigznkwtbjb.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_Vl2HHitV1fXg0OXN7lH7Fg_9VG0O5fb";
+const SUPABASE_URL = "PASTE_SUPABASE_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_OR_PUBLISHABLE_KEY_HERE";
 
 // 2) Atur tujuan pembayaran. Gunakan QR yang memang milik Anda dan sudah diuji.
 const PAYMENT_DESTINATION = `Metode: GoPay / transfer bank
@@ -11,7 +11,7 @@ const QR_IMAGE_PATH = "assets/qris.png"; // Ganti file assets/qris.png dengan ga
 
 const $ = (id) => document.getElementById(id);
 const configured = !SUPABASE_URL.includes("PASTE_") && !SUPABASE_ANON_KEY.includes("PASTE_");
-let sb = null, currentUser = null, currentProfile = null, invoicesCache = [], customersCache = [], recoveryMode = false;
+let sb = null, currentUser = null, currentProfile = null, invoicesCache = [], customersCache = [], recoveryMode = false, checkoutInvoice = null;
 
 function showNotice(message, error=false) {
   $("notice").textContent = message;
@@ -35,17 +35,34 @@ function renderDestination(){
 }
 function showAuth(tab="login"){toggle("authPanel",true);toggle("appPanel",false);toggle("pendingPanel",false);toggle("recoveryPanel",false);toggle("loginForm",tab==="login");toggle("registerForm",tab==="register");$("loginTab").classList.toggle("active",tab==="login");$("registerTab").classList.toggle("active",tab==="register");toggle("logoutBtn",false);}
 function signedOut(){currentUser=null;currentProfile=null;if(!recoveryMode)showAuth();clearNotice();}
+function showRecoveryPanel(){
+  // Reset-password screen must be isolated from the signed-in application/admin dashboard.
+  recoveryMode=true;
+  toggle("authPanel",false);
+  toggle("appPanel",false);
+  toggle("adminArea",false);
+  toggle("customerArea",false);
+  toggle("pendingPanel",false);
+  toggle("recoveryPanel",true);
+  toggle("logoutBtn",false);
+  clearNotice();
+  showNotice("Tautan pemulihan dikenali. Silakan buat kata sandi baru.");
+}
 async function refreshSession(){
   const {data:{session},error}=await sb.auth.getSession();
   if(error) throw error;
+  // Do not let the normal session/profile loader reopen the dashboard during recovery.
+  if(recoveryMode) { showRecoveryPanel(); return; }
   if(!session){signedOut();return;}
   currentUser=session.user;
   await loadProfile();
 }
 async function loadProfile(){
+  if(recoveryMode) { showRecoveryPanel(); return; }
   const {data,error}=await sb.from("profiles").select("id,full_name,phone,role,account_status").eq("id",currentUser.id).maybeSingle();
   if(error) throw error;
   currentProfile=data;
+  if(recoveryMode) { showRecoveryPanel(); return; }
   toggle("authPanel",false);toggle("logoutBtn",true);
   if(!data){showNotice("Profil belum tersedia. Hubungi admin.",true);return;}
   if(data.role!=="admin" && data.account_status!=="approved"){toggle("appPanel",false);toggle("pendingPanel",true);return;}
@@ -61,27 +78,38 @@ async function loadCustomer(){
   if(error) throw error;
   invoicesCache=inv||[];
   $("customerInvoices").innerHTML=invoicesCache.length?invoicesCache.map(i=>`
-    <article class="item"><h3>${safe(i.title)}</h3><p><b>${money(i.amount)}</b></p><p>Jatuh tempo: ${dateFmt(i.due_date)}</p><p>${statusPill(i.status)}</p>${i.note?`<p>${safe(i.note)}</p>`:""}
-    ${i.status!=="paid"?`<div class="inline-form"><form class="submit-payment-form" data-invoice="${i.id}"><label>Metode pembayaran<select name="method"><option>GoPay</option><option>Transfer bank</option><option>QRIS</option></select></label><label>Nominal yang dibayar (Rp)<input name="amount" type="number" min="1" step="1" required value="${Number(i.amount)}"></label><label>Referensi transaksi (opsional)<input name="reference" maxlength="120" placeholder="Nomor referensi / waktu transaksi"></label><label>Catatan (opsional)<input name="note" maxlength="500" placeholder="Keterangan singkat"></label><button type="submit">Saya sudah membayar</button></form></div>`:""}
-    </article>`).join(""):'<p class="empty">Belum ada tagihan.</p>';
-  $("customerInvoices").querySelectorAll(".submit-payment-form").forEach(f=>f.addEventListener("submit",submitPayment));
+    <article class="item invoice-card"><div class="invoice-card-top"><span class="invoice-icon">▤</span>${statusPill(i.status)}</div><h3>${safe(i.title)}</h3><p class="invoice-amount">${money(i.amount)}</p><p>Jatuh tempo: ${dateFmt(i.due_date)}</p>${i.note?`<p class="muted">${safe(i.note)}</p>`:""}${i.status!=="paid"?`<button type="button" class="checkout-primary" data-checkout="${i.id}">Bayar tagihan</button>`:""}</article>`).join(""):'<p class="empty">Belum ada tagihan.</p>';
+  $("customerInvoices").querySelectorAll("[data-checkout]").forEach(b=>b.onclick=()=>startCheckout(b.dataset.checkout));
   const {data:subs,error:subErr}=await sb.from("payment_submissions").select("id,invoice_id,claimed_amount,method,reference,note,status,created_at,admin_note").order("created_at",{ascending:false});
   if(subErr) throw subErr;
   $("customerSubmissions").innerHTML=(subs||[]).length?(subs||[]).map(s=>{const inv=invoicesCache.find(i=>i.id===s.invoice_id);return `<article class="item"><h3>${safe(inv?.title||"Tagihan")}</h3><p>${money(s.claimed_amount)} · ${safe(s.method)}</p><p>Status: ${statusPill(s.status)}</p><p>Referensi: ${safe(s.reference||"—")}</p><p>Dikirim: ${new Date(s.created_at).toLocaleString("id-ID")}</p>${s.admin_note?`<p>Catatan admin: ${safe(s.admin_note)}</p>`:""}</article>`}).join(""):'<p class="empty">Belum ada konfirmasi pembayaran.</p>';
 }
-async function submitPayment(e){
-  e.preventDefault(); const f=e.currentTarget, fd=new FormData(f);
-  const amount=Number(fd.get("amount"));
-  if(!Number.isSafeInteger(amount)||amount<1){showNotice("Nominal pembayaran tidak valid.",true);return;}
-  const invoiceId=f.dataset.invoice;
+function startCheckout(invoiceId){
   const invoice=invoicesCache.find(i=>i.id===invoiceId);
   if(!invoice||invoice.status==="paid"){showNotice("Tagihan tidak tersedia atau sudah lunas.",true);return;}
-  const btn=f.querySelector("button");btn.disabled=true;
+  checkoutInvoice=invoice;
+  $("checkoutSummary").innerHTML=`<div class="summary-row"><span>Tagihan</span><strong>${safe(invoice.title)}</strong></div><div class="summary-row"><span>Jatuh tempo</span><strong>${dateFmt(invoice.due_date)}</strong></div><div class="summary-total"><span>Total pembayaran</span><strong>${money(invoice.amount)}</strong></div>`;
+  $("checkoutAmount").value=Number(invoice.amount);$("checkoutReference").value="";
+  toggle("checkoutPanel",true);toggle("checkoutPaymentStep",false);toggle("checkoutConfirmForm",false);toggle("checkoutContinue",true);
+  $("stepSummary").className="current";$("stepPay").className="";$("stepConfirm").className="";
+  renderDestination();$("checkoutPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function setCheckoutStep(step){
+  toggle("checkoutSummary",step===1);toggle("checkoutContinue",step===1);toggle("checkoutPaymentStep",step===2);toggle("checkoutConfirmForm",step===3);
+  $("stepSummary").className=step>1?"done": "current";$("stepPay").className=step===2?"current":(step>2?"done":"");$("stepConfirm").className=step===3?"current":"";
+  const chip=document.querySelector(".step-chip");if(chip)chip.textContent=`LANGKAH ${step} DARI 3`;
+}
+async function submitCheckoutConfirmation(e){
+  e.preventDefault();if(!checkoutInvoice||!currentUser)return;
+  const amount=Number($("checkoutAmount").value),reference=$("checkoutReference").value.trim();
+  if(!Number.isSafeInteger(amount)||amount<1){showNotice("Nominal pembayaran tidak valid.",true);return;}
+  if(!reference){showNotice("Masukkan nomor referensi transaksi.",true);return;}
+  if(checkoutInvoice.status==="paid"){showNotice("Tagihan sudah lunas.",true);return;}
+  const btn=$("checkoutConfirmForm").querySelector('button[type="submit"]');btn.disabled=true;
   try{
-    const {error}=await sb.from("payment_submissions").insert({invoice_id:invoiceId,customer_id:currentUser.id,claimed_amount:amount,method:fd.get("method"),reference:(fd.get("reference")||"").trim()||null,note:(fd.get("note")||"").trim()||null});
-    if(error) throw error;
-    showNotice("Konfirmasi terkirim. Tagihan belum lunas sampai admin memeriksa dan menyetujui.");
-    await loadCustomer();
+    const {error}=await sb.from("payment_submissions").insert({invoice_id:checkoutInvoice.id,customer_id:currentUser.id,claimed_amount:amount,method:"GoPay",reference,note:null});
+    if(error)throw error;
+    toggle("checkoutPanel",false);checkoutInvoice=null;showNotice("Konfirmasi pembayaran terkirim. Tagihan tetap menunggu pemeriksaan admin.");await loadCustomer();
   }catch(err){showNotice(err.message||"Gagal mengirim konfirmasi.",true);}finally{btn.disabled=false;}
 }
 async function loadAdmin(){
@@ -131,9 +159,7 @@ function init(){
   // Password recovery links return to this GitHub Pages URL; Supabase JS processes the URL session.
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==="PASSWORD_RECOVERY"){
-      recoveryMode=true;
-      toggle("authPanel",false);toggle("appPanel",false);toggle("pendingPanel",false);toggle("recoveryPanel",true);toggle("logoutBtn",false);
-      showNotice("Tautan pemulihan dikenali. Silakan buat kata sandi baru.");
+      showRecoveryPanel();
     } else if(event==="SIGNED_OUT" && !recoveryMode){ signedOut(); }
   });
   $("forgotPasswordBtn").onclick=async()=>{
@@ -164,6 +190,10 @@ function init(){
   $("logoutBtn").onclick=async()=>{await sb.auth.signOut();signedOut();};
   $("pendingRefresh").onclick=async()=>{try{await refreshSession();}catch(e){showNotice(e.message,true);}};
   $("invoiceForm").onsubmit=createInvoice;
+  $("checkoutCancel").onclick=()=>{toggle("checkoutPanel",false);checkoutInvoice=null;};
+  $("checkoutContinue").onclick=()=>setCheckoutStep(2);
+  $("checkoutToConfirm").onclick=()=>setCheckoutStep(3);
+  $("checkoutConfirmForm").onsubmit=submitCheckoutConfirmation;
   refreshSession().catch(e=>showNotice(e.message||"Tidak dapat memuat akun.",true));
 }
 init();

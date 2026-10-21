@@ -59,16 +59,18 @@
         <div><h1 id="welcomeTitle">Tagihan saya</h1><p id="welcomeText" class="muted"></p></div>
       </div>
       <div id="customerArea" class="hidden">
-        <section class="panel">
-          <h2>Petunjuk pembayaran</h2>
-          <p>Bayar sesuai nominal tagihan menggunakan QR pribadi/QRIS statis yang ditampilkan admin, atau transfer ke rekening tujuan. Setelah membayar, kirim konfirmasi di bawah. Status baru menjadi <b>Lunas</b> setelah admin memeriksa dana masuk dan menyetujui pembayaran.</p>
-          <div id="paymentDestination" class="payment-destination"></div>
-          <img id="qrisImage" class="qris hidden" alt="QR pembayaran">
-          <p id="qrisMissing" class="muted">Admin belum memasang gambar QR. Gunakan rekening/nomor pembayaran yang ditampilkan atau hubungi admin.</p>
+        <section class="panel checkout-intro">
+          <p class="eyebrow">PEMBAYARAN MUDAH</p><h2>Pilih tagihan yang ingin dibayar</h2>
+          <p class="muted">Pilih tagihan, ikuti instruksi GoPay, lalu masukkan nominal dan nomor referensi transaksi. Admin memeriksa pembayaran sebelum tagihan dinyatakan lunas.</p>
         </section>
-        <section class="panel">
-          <h2>Tagihan saya</h2>
-          <div id="customerInvoices" class="cards"></div>
+        <section class="panel"><h2>Tagihan saya</h2><div id="customerInvoices" class="cards"></div></section>
+        <section id="checkoutPanel" class="panel hidden">
+          <div class="checkout-head"><span class="step-chip">CHECKOUT</span><button id="checkoutCancel" type="button" class="secondary">Kembali</button></div>
+          <h2>Checkout pembayaran</h2><div class="checkout-steps"><span id="stepSummary" class="current">1. Ringkasan</span><span id="stepPay">2. Bayar</span><span id="stepConfirm">3. Konfirmasi</span></div>
+          <div id="checkoutSummary" class="checkout-summary"></div>
+          <button id="checkoutContinue" type="button" class="checkout-primary">Lanjutkan pembayaran</button>
+          <div id="checkoutPaymentStep" class="hidden"><h3>Bayar dengan GoPay</h3><p>Gunakan aplikasi GoPay untuk membayar ke tujuan berikut. Pastikan nama penerima dan nominal sudah benar.</p><div id="paymentDestination" class="payment-destination"></div><img id="qrisImage" class="qris hidden" alt="QR pembayaran"><p id="qrisMissing" class="muted">QR belum dipasang. Hubungi admin untuk memastikan nomor GoPay tujuan.</p><button id="checkoutToConfirm" type="button" class="checkout-primary">Saya sudah membayar</button></div>
+          <form id="checkoutConfirmForm" class="hidden"><h3>Konfirmasi pembayaran</h3><label>Nominal yang dibayar (Rupiah)<input id="checkoutAmount" type="number" min="1" step="1" required></label><label>Nomor referensi transaksi<input id="checkoutReference" maxlength="120" required placeholder="Nomor referensi transaksi GoPay"></label><p class="muted">Jangan masukkan PIN atau OTP. Tagihan belum lunas sampai admin menyetujui konfirmasi.</p><button type="submit" class="checkout-primary">Kirim konfirmasi</button></form>
         </section>
         <section class="panel">
           <h2>Riwayat konfirmasi</h2>
