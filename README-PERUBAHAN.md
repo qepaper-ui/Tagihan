@@ -41,3 +41,9 @@ Tidak ada perubahan database. `schema.sql` tidak perlu dijalankan ulang.
 ## v8 — cicilan
 - Jalankan `schema-cicilan.sql` SEKALI di Supabase SQL Editor (wajib).
 - Admin: tab Tagihan > Jenis "Cicilan": isi total, jumlah bulan, jatuh tempo pertama. Sistem membuat tagihan bulanan otomatis (sisa pembulatan masuk cicilan terakhir). Customer melihat progres dan sisa cicilan.
+
+## v9
+- Logo kini tertanam di index.html (tidak perlu folder assets agar logo tampil). Penanda ?v=9 memaksa browser memuat style.css/app.js terbaru. Pastikan style.css, app.js, config.js, index.html semua ikut diunggah.
+
+## v10
+- Logo dibuat opaque (latar putih) agar tidak jadi kotak hitam di mode gelap otomatis Android/Chrome; halaman dikunci ke mode terang; penyesuaian layout ponsel, tablet, dan laptop.

@@ -45,3 +45,11 @@ button,.checkout-primary{background:linear-gradient(135deg,#08357a,#0a7be8);box-
 input,select,textarea{font-size:16px;max-width:100%}button{min-height:44px}.small-btn{min-height:38px}footer{padding-bottom:max(16px,env(safe-area-inset-bottom))}
 @media(max-width:600px){.topbar{padding-left:14px;padding-right:14px}.brand small{display:none}.brand img{height:34px}.wrap{padding-left:14px;padding-right:14px}.hero{padding:18px 16px}.hero h2{font-size:21px}.panel{padding:16px}.cards,.form-grid,.stats3{grid-template-columns:1fr}#checkoutPanel{padding:16px;margin-top:0}.row-actions button,.checkout-primary,.quick button{width:100%}.atabs{margin:0 -14px;padding-left:14px;padding-right:14px}}
 .bar{height:10px;background:#e0ecfb;border-radius:99px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#0a6be6,#35a6ff)}.plan{border-left:6px solid #0a7be8;margin-bottom:14px}
+
+/* v10 lintas browser/perangkat */
+:root{color-scheme:light only}html{-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.brand img,.auth-logo{background:#fff;border-radius:8px}
+button{-webkit-appearance:none;appearance:none}.atabs{-webkit-backdrop-filter:blur(8px);-webkit-overflow-scrolling:touch;scrollbar-width:none}.atabs::-webkit-scrollbar{display:none}
+@media(min-width:700px){.cards{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
+@media(min-width:900px){.wrap{max-width:1080px;margin-left:auto;margin-right:auto}.method-grid{grid-template-columns:repeat(3,1fr)}.hero h2{font-size:30px}}
