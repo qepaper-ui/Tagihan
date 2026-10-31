@@ -2,14 +2,16 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistem Tagihan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a5bd6"><meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png"><link rel="apple-touch-icon" href="assets/icon-180.png"><link rel="manifest" href="manifest.webmanifest">
+  <title>Alfabill — Tagihan & Pembayaran</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="topbar">
-    <div><strong>Sistem Tagihan</strong><small> Pembayaran QR / transfer — verifikasi manual</small></div>
+    <div class="brand"><img src="assets/logo-a.png" alt="Alfabill"><div><strong>Alfabill</strong><small>Tagihan &amp; pembayaran · verifikasi manual</small></div></div>
     <button id="logoutBtn" class="secondary hidden">Keluar</button>
   </header>
   <main class="wrap">
@@ -18,7 +20,7 @@
       <h1>Konfigurasi belum lengkap</h1>
       <p>Isi URL project Supabase dan anon/publishable key di file <code>app.js</code>, lalu muat ulang halaman.</p>
     </section>
-    <section id="authPanel" class="panel hidden">
+    <section id="authPanel" class="panel hidden"><img class="auth-logo" src="assets/logo-alfabill.png" alt="Alfabill">
       <div class="tabs">
         <button id="loginTab" class="tab active">Masuk</button>
         <button id="registerTab" class="tab">Daftar customer</button>
@@ -59,58 +61,66 @@
         <div><h1 id="welcomeTitle">Tagihan saya</h1><p id="welcomeText" class="muted"></p></div>
       </div>
       <div id="customerArea" class="hidden">
-        <section class="panel checkout-intro">
-          <p class="eyebrow">PEMBAYARAN MUDAH</p><h2>Pilih tagihan yang ingin dibayar</h2>
-          <p class="muted">Pilih tagihan, ikuti instruksi GoPay, lalu masukkan nominal dan nomor referensi transaksi. Admin memeriksa pembayaran sebelum tagihan dinyatakan lunas.</p>
-        </section>
-        <section class="panel"><h2>Tagihan saya</h2><div id="customerInvoices" class="cards"></div></section>
+        <div id="customerHome">
+        <section class="hero"><p class="eyebrow">RUANG PELANGGAN</p><h2>Tetap tenang, pembayaranmu tercatat! 🎉</h2><p id="customerSummary"></p></section>
+        <div class="stats3"><div class="stat"><span class="ic c1">▤</span><div><small>Total tagihan</small><b id="stTotal">Rp 0</b></div></div><div class="stat"><span class="ic c2">✓</span><div><small>Sudah dibayar</small><b id="stPaid">Rp 0</b></div></div><div class="stat"><span class="ic c3">⏳</span><div><small>Menunggu verifikasi</small><b id="stPend">0</b></div></div></div>
+        <div id="customerPlans"></div>
+        <section class="panel"><h2>Tagihan yang perlu diselesaikan</h2><div id="customerInvoices" class="cards"></div></section>
+        </div>
         <section id="checkoutPanel" class="panel hidden">
-          <div class="checkout-head"><span class="step-chip">CHECKOUT</span><button id="checkoutCancel" type="button" class="secondary">Kembali</button></div>
-          <h2>Checkout pembayaran</h2><div class="checkout-steps"><span id="stepSummary" class="current">1. Ringkasan</span><span id="stepPay">2. Bayar</span><span id="stepConfirm">3. Konfirmasi</span></div>
+          <div class="checkout-head"><span class="step-chip">CHECKOUT</span><button id="checkoutCancel" type="button" class="secondary">← Kembali</button></div>
+          <h2>Pembayaran tagihan</h2><div class="checkout-steps"><span id="stepSummary" class="current">1. Ringkasan</span><span id="stepPay">2. Bayar</span><span id="stepConfirm">3. Konfirmasi</span></div>
           <div id="checkoutSummary" class="checkout-summary"></div>
           <button id="checkoutContinue" type="button" class="checkout-primary">Lanjutkan pembayaran</button>
-          <div id="checkoutPaymentStep" class="hidden"><h3>Bayar dengan GoPay</h3><p>Gunakan aplikasi GoPay untuk membayar ke tujuan berikut. Pastikan nama penerima dan nominal sudah benar.</p><div id="paymentDestination" class="payment-destination"></div><img id="qrisImage" class="qris hidden" alt="QR pembayaran"><p id="qrisMissing" class="muted">QR belum dipasang. Hubungi admin untuk memastikan nomor GoPay tujuan.</p><button id="checkoutToConfirm" type="button" class="checkout-primary">Saya sudah membayar</button></div>
-          <form id="checkoutConfirmForm" class="hidden"><h3>Konfirmasi pembayaran</h3><label>Nominal yang dibayar (Rupiah)<input id="checkoutAmount" type="number" min="1" step="1" required></label><label>Nomor referensi transaksi<input id="checkoutReference" maxlength="120" required placeholder="Nomor referensi transaksi GoPay"></label><p class="muted">Jangan masukkan PIN atau OTP. Tagihan belum lunas sampai admin menyetujui konfirmasi.</p><button type="submit" class="checkout-primary">Kirim konfirmasi</button></form>
+          <div id="checkoutPaymentStep" class="hidden"><h3>Pilih Pembayaran</h3><div id="methodGrid" class="method-grid"></div><div id="methodDetail" class="hidden"><div id="paymentDestination" class="payment-destination"></div><div class="row-actions"><button type="button" id="copyNumber" class="small-btn secondary">Salin nomor</button><button type="button" id="copyAmount" class="small-btn secondary">Salin nominal</button></div><img id="qrisImage" class="qris hidden" alt="QR pembayaran"><p class="muted">Pastikan nama penerima dan nominal sudah benar.</p></div><button id="checkoutToConfirm" type="button" class="checkout-primary hidden">Saya sudah membayar</button></div>
+          <form id="checkoutConfirmForm" class="hidden"><h3>Konfirmasi pembayaran</h3><p class="muted">Metode: <b id="chosenMethod"></b></p><label>Nominal yang dibayar (Rupiah)<input id="checkoutAmount" type="number" min="1" step="1" required></label><label>Nomor referensi transaksi<input id="checkoutReference" maxlength="120" required placeholder="Nomor referensi transaksi GoPay"></label><p class="muted">Jangan masukkan PIN atau OTP. Tagihan belum lunas sampai admin menyetujui konfirmasi.</p><button type="submit" class="checkout-primary">Kirim konfirmasi</button></form>
         </section>
-        <section class="panel">
+        <section id="customerHistory" class="panel">
           <h2>Riwayat konfirmasi</h2>
           <div id="customerSubmissions" class="cards"></div>
         </section>
       </div>
       <div id="adminArea" class="hidden">
-        <section class="panel">
-          <h2>Pengaturan tujuan pembayaran</h2>
-          <p class="muted">Edit nilai di pengaturan aplikasi pada Supabase, atau ubah konstanta di app.js. Jangan memasang QR milik orang lain.</p>
-          <div id="adminDestinationPreview" class="payment-destination"></div>
+        <nav id="adminTabs" class="atabs"><button type="button" data-go="ringkas" class="on">📊 Ringkasan</button><button type="button" data-go="bayar">💳 Pembayaran<b id="bdBayar" class="bd"></b></button><button type="button" data-go="tagihan">🧾 Tagihan</button><button type="button" data-go="cust">👥 Customer<b id="bdCust" class="bd"></b></button><button type="button" data-go="metode">⚙️ Metode</button></nav>
+        <div data-atab="ringkas"><div id="adminStats" class="stats3"></div><div id="adminQuick" class="quick"></div></div>
+        <section class="panel" data-atab="bayar">
+          <h2>Konfirmasi pembayaran menunggu pemeriksaan</h2>
+          <p class="muted">Cocokkan nominal, tanggal, referensi, dan dana yang benar-benar masuk ke aplikasi GoPay/bank Anda sebelum menyetujui.</p>
+          <div id="adminSubmissions" class="cards"></div>
         </section>
-        <section class="panel">
+        <section class="panel" data-atab="metode">
+          <h2>Metode pembayaran</h2>
+          <p class="muted">Tambah, nonaktifkan, atau hapus metode yang dilihat customer. Logo/QR opsional (URL https). Jangan memasang QR milik orang lain.</p>
+          <div id="adminMethods" class="cards"></div>
+          <form id="methodForm"><label>Nama metode<input id="mName" list="mPresets" maxlength="40" required placeholder="mis. DANA"></label><datalist id="mPresets"><option value="GoPay"><option value="DANA"><option value="OVO"><option value="ShopeePay"><option value="QRIS"><option value="Bank Transfer"></datalist><label>Nama penerima<input id="mAccName" maxlength="80"></label><label>Nomor / rekening<input id="mAccNum" maxlength="80"></label><label>Catatan<input id="mNote" maxlength="300"></label><label>URL logo (opsional)<input id="mLogo" type="url" placeholder="https://..."></label><label>URL gambar QR (opsional)<input id="mQr" type="url" placeholder="https://..."></label><button type="submit" class="checkout-primary">Tambah metode</button></form>
+        </section>
+        <section class="panel" data-atab="cust">
           <h2>Permintaan akun customer</h2>
           <div id="adminCustomers" class="cards"></div>
         </section>
-        <section class="panel">
+        <section class="panel" data-atab="tagihan">
           <h2>Buat tagihan</h2>
           <form id="invoiceForm" class="form-grid">
+            <label>Jenis<select id="invoiceKind"><option value="single">Tagihan biasa</option><option value="plan">Cicilan</option></select></label>
             <label>Customer<select id="invoiceCustomer" required></select></label>
             <label>Judul tagihan<input id="invoiceTitle" required maxlength="160" placeholder="Contoh: Tagihan Oktober 2026"></label>
-            <label>Nominal (Rupiah)<input id="invoiceAmount" type="number" min="1" step="1" required></label>
-            <label>Jatuh tempo<input id="invoiceDue" type="date" required></label>
+            <label><span id="amtLbl">Nominal (Rupiah)</span><input id="invoiceAmount" type="number" min="1" step="1" required></label>
+            <label class="planOnly hidden">Jumlah cicilan (bulan)<input id="planMonths" type="number" min="2" max="60" step="1" placeholder="mis. 6"></label>
+            <label><span id="dueLbl">Jatuh tempo</span><input id="invoiceDue" type="date" required></label>
+            <p id="planPreview" class="muted hidden" style="grid-column:1/-1"></p>
             <label>Catatan (opsional)<input id="invoiceNote" maxlength="500"></label>
             <button type="submit">Buat tagihan</button>
           </form>
         </section>
-        <section class="panel">
+        <section class="panel" data-atab="tagihan">
           <h2>Semua tagihan</h2>
           <div id="adminInvoices" class="cards"></div>
-        </section>
-        <section class="panel">
-          <h2>Konfirmasi pembayaran menunggu pemeriksaan</h2>
-          <p class="muted">Cocokkan nominal, tanggal, referensi, dan dana yang benar-benar masuk ke aplikasi GoPay/bank Anda sebelum menyetujui.</p>
-          <div id="adminSubmissions" class="cards"></div>
         </section>
       </div>
     </section>
   </main>
   <footer>Jangan pernah menganggap pembayaran lunas hanya karena customer mengirim konfirmasi.</footer>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
